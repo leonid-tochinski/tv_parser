@@ -30,29 +30,53 @@ g. Be prepared to discuss how the code architecture might change if Value fieldâ
 
 using namespace std;
 
-
-struct type_value_t
-{
-    unsigned char type;
-    unsigned char value;
-};
-
-
-// struct type1_value_t : public type_value_t
-// {
-//     void print() const {};
-// };
-
-
-
 // error print helper
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define FILE_LINE __FILE__ "(" STRINGIZE(__LINE__) "): "
 
-enum {Type_1=0, Type_2=1, Type_3=2, Type_4=3};
+class tv_parser
+{
+    public:
+       bool init(const unsigned char* bytes, int size);
+       void print() const;
+    private:
+        enum {Type_0=0, Type_1=1, Type_2=2, Type_3=3};
+        struct type_value_t
+        {
+            type_value_t(unsigned char type, unsigned char value) :
+                 _type(type),
+                 _value(value) {}
+            virtual void print() const=0;
 
-bool tv_parser(const unsigned char* bytes, int size, vector<type_value_t>& tv_vector )
+            unsigned char _type;
+            unsigned char _value;
+        };
+        struct type_0_value_t : public type_value_t
+        {
+            type_0_value_t(unsigned char type, unsigned char value) : type_value_t(type, value){}
+            void print() const;
+        };
+        struct type_1_value_t : public type_value_t
+        {
+            type_1_value_t(unsigned char type, unsigned char value) : type_value_t(type, value){}
+            void print() const;
+        };
+        struct type_2_value_t : public type_value_t
+        {
+            type_2_value_t(unsigned char type, unsigned char value) : type_value_t(type, value){}
+            void print() const;
+        };
+        struct type_3_value_t : public type_value_t
+        {
+            type_3_value_t(unsigned char type, unsigned char value) : type_value_t(type, value){}
+            void print() const;
+        };
+
+    vector<shared_ptr<type_value_t> > _tv_vector;
+};
+
+bool tv_parser::init(const unsigned char* bytes, int size)
 {
     // sanity check
     if (bytes == nullptr)
@@ -65,56 +89,65 @@ bool tv_parser(const unsigned char* bytes, int size, vector<type_value_t>& tv_ve
         cerr << FILE_LINE << "WARNING : last value is missing" << endl;
     }
 
-    type_value_t tv;
-    for (int i=0; i+1 < size; i += 2)
-    {
-        if (bytes[i] & ~0x03)
-            {
-                cerr << FILE_LINE << "ERROR: unexpected Type " << (unsigned)bytes[i] << endl;
-                continue;
-            }
-        tv.type  = bytes[i];
-        tv.value = bytes[i+1];
-        tv_vector.push_back(tv);
-    }
-    if (tv_vector.empty())
+    // empty vector of tv pairs
+    _tv_vector.clear();
+
+   for (int i=0; i+1 < size; i += 2)
+   {
+      const unsigned char& type  = bytes[i];
+      const unsigned char& value = bytes[i+1];
+      switch(type)
+        {
+        case Type_0: _tv_vector.push_back(shared_ptr<type_value_t>(new type_0_value_t(type, value)));
+                     break;
+        case Type_1: _tv_vector.push_back(shared_ptr<type_value_t>(new type_1_value_t(type, value)));
+                     break;
+        case Type_2: _tv_vector.push_back(shared_ptr<type_value_t>(new type_2_value_t(type, value)));
+                     break;
+        case Type_3: _tv_vector.push_back(shared_ptr<type_value_t>(new type_3_value_t(type, value)));
+                     break;
+        default:     cerr << FILE_LINE << "ERROR: unexpected Type " << (unsigned)type << endl;
+        }
+   }
+    if (_tv_vector.empty())
     {
         cerr << FILE_LINE << "WARNING: no Type-Values were parsed" << endl;
+        return false;
     }
-
     return true;
 }
 
-bool print_tv(const vector<type_value_t>& tv_vector)
+void tv_parser::print() const
 {
-   for (auto tv : tv_vector)
-   {
-       switch(tv.type)
-       {
-       case Type_1:
-            cout << "type: 1 value: " << (unsigned)tv.value << endl; break;
-       case Type_2:
-            cout << "type: 2 value: " << (unsigned)tv.value << endl; break;
-       case Type_3:
-            cout << "type: 3 value: " << (unsigned)tv.value << endl; break;
-       case Type_4:
-            cout << "type: 4 value: " << (unsigned)tv.value << endl; break;
-       default:
-            cerr << FILE_LINE << "ERROR : Unknown Type "  << (unsigned)tv.type << endl;
-            return false;
-       }
-   }
-   return true;
+    for (auto tv : _tv_vector)
+        tv->print();
 }
 
-
-
-int main(int argc, char *argv[])
+void tv_parser::type_0_value_t::print() const
 {
-    unsigned char bytes[] = {5, 253, 0, 126, 0, 53, 3, 181, 2, 12};
-    vector<type_value_t> tv_vector;
-    tv_parser(bytes, sizeof (bytes), tv_vector);
-    print_tv(tv_vector);
+     cout << "type: 0 value: " << (unsigned)_value << endl;
+}
 
+void tv_parser::type_1_value_t::print() const
+{
+     cout << "type: 1 value: " << (unsigned)_value << endl;
+}
+
+void tv_parser::type_2_value_t::print() const
+{
+     cout << "type: 2 value: " << (unsigned)_value << endl;
+}
+
+void tv_parser::type_3_value_t::print() const
+{
+     cout << "type: 3 value: " << (unsigned)_value << endl;
+}
+
+int main()
+{
+    unsigned char bytes[] = {3, 253, 0, 126, 0, 53, 3, 181, 2, 12};
+    tv_parser parser;
+    if (parser.init(bytes, sizeof (bytes)))
+        parser.print();
     return 0;
 }
