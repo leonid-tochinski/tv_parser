@@ -30,11 +30,12 @@ g. Be prepared to discuss how the code architecture might change if Value fieldâ
 
 using namespace std;
 
+// ============== Parser Implementation start =======================
+
 // error print helper
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define FILE_LINE __FILE__ "(" STRINGIZE(__LINE__) "): "
-
 class tv_parser
 {
     public:
@@ -76,19 +77,24 @@ class tv_parser
     vector<shared_ptr<type_value_t> > _tv_vector;
 };
 
+// parse binary input array
 bool tv_parser::init(const unsigned char* bytes, int size)
 {
     // sanity check
-    if (bytes == nullptr)
+    if (bytes == nullptr || size <= 0)
     {
         cerr << FILE_LINE << "ERROR : bad input data" << endl;
         return false;
     }
+    if (size < 2)
+    {
+        cerr << FILE_LINE << "ERROR: unsufficient data" << endl;
+        return false;
+    }
     if (size % 2)
     {
-        cerr << FILE_LINE << "WARNING : last value is missing" << endl;
+        cerr << FILE_LINE << "WARNING : last value is missing for type " <<  (unsigned)bytes[size-1] << endl;
     }
-
     // empty vector of tv pairs
     _tv_vector.clear();
 
@@ -96,6 +102,7 @@ bool tv_parser::init(const unsigned char* bytes, int size)
    {
       const unsigned char& type  = bytes[i];
       const unsigned char& value = bytes[i+1];
+      // add Type-Value pairs to corresponded objects
       switch(type)
         {
         case Type_0: _tv_vector.push_back(shared_ptr<type_value_t>(new type_0_value_t(type, value)));
@@ -117,12 +124,14 @@ bool tv_parser::init(const unsigned char* bytes, int size)
     return true;
 }
 
+// print parsed TypeValue pairs
 void tv_parser::print() const
 {
     for (auto tv : _tv_vector)
         tv->print();
 }
 
+// Type specific print member functions
 void tv_parser::type_0_value_t::print() const
 {
      cout << "type: 0 value: " << (unsigned)_value << endl;
@@ -143,11 +152,35 @@ void tv_parser::type_3_value_t::print() const
      cout << "type: 3 value: " << (unsigned)_value << endl;
 }
 
+// ============== Parser Implementation end =======================
+
+// Test functioin helper
+int test(const char* test_name, const unsigned char* bytes, int size)
+{
+    cout << "-----------------------------------------------------------" << endl;
+    cout << "Testing: " <<  test_name << endl;
+    tv_parser parser;
+    if (parser.init(bytes, size))
+        parser.print();
+    return 0;
+}
+
 int main()
 {
     unsigned char bytes[] = {3, 253, 0, 126, 0, 53, 3, 181, 2, 12};
-    tv_parser parser;
-    if (parser.init(bytes, sizeof (bytes)))
-        parser.print();
+    test("Sample data", bytes, sizeof(bytes));
+    test("Bad input data", 0, sizeof(bytes));
+    test("Bad input data size", bytes, -1);
+    unsigned char bytes1[] = {1, 253, 0};
+    test("Last value is missing", bytes1, sizeof(bytes1));
+    unsigned char bytes2[] = {1};
+    test("Insufficient input array", bytes2, sizeof(bytes2));
+    unsigned char bytes3[] = {5, 253, 0, 126};
+    test("Bad tag", bytes3, sizeof(bytes3));
+    cout << "-----------------------------------------------------------" << endl;
+
+    // tv_parser parser;
+    // if (parser.init(bytes, sizeof (bytes)))
+    //     parser.print();
     return 0;
 }

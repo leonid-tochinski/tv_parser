@@ -26,6 +26,8 @@ g. Be prepared to discuss how the code architecture might change if Value fieldâ
 #include <stdio.h>
 #include <stdbool.h>
 
+// ============== Parser Implementation start =======================
+
 // error print helper macros
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
@@ -50,11 +52,18 @@ bool tv_parser(const unsigned char* bytes, int size, type_value_t* tv_vector, in
         fprintf(stderr,"%s ERROR: bad input params\n", FILE_LINE);
         return false;
     }
+    // sanity check
+    if (size < 2)
+    {
+        fprintf(stderr,"%s ERROR: unsufficient data\n", FILE_LINE);
+        return false;
+    }
     if (size % 2)
     {
-        fprintf(stderr,"%s WARNING : last value is missing\n", FILE_LINE);
+        fprintf(stderr,"%s WARNING : last value is missing for type %d\n", FILE_LINE,
+              (unsigned char)bytes[size-1]);
     }
-    if (tv_vector == NULL || *tv_vector_size < size/2)
+    if (tv_vector == NULL || tv_vector_size == NULL || *tv_vector_size < size/2)
     {
          fprintf(stderr,"%s ERROR: output Type-Value array doesn't have enough space\n", FILE_LINE);
          return false;
@@ -72,6 +81,7 @@ bool tv_parser(const unsigned char* bytes, int size, type_value_t* tv_vector, in
         tv_ptr->value = bytes[i+1];
         ++tv_ptr;
     }
+    // find how many Type-Values were parsed
     *tv_vector_size = tv_ptr - tv_vector;
     if (!*tv_vector_size)
     {
@@ -82,6 +92,8 @@ bool tv_parser(const unsigned char* bytes, int size, type_value_t* tv_vector, in
     return true;
 }
 
+
+// cintext specific print functions
 void print_type_0(const type_value_t* tv)
 {
     printf("type: 0 value: %d\n", (unsigned)tv->value);
@@ -102,6 +114,7 @@ void print_type_3(const type_value_t* tv)
     printf("type: 3 value: %d\n", (unsigned)tv->value);
 }
 
+// array of context print functions
 typedef void (*print_func_t)(const type_value_t* tv);
 print_func_t print_func[] =
 {
@@ -111,6 +124,7 @@ print_func_t print_func[] =
     print_type_3
 };
 
+// print all Type-Value entries
 void print_tv(const type_value_t* tv_vector, int tv_vector_size)
 {
     // sanity check
@@ -130,12 +144,33 @@ void print_tv(const type_value_t* tv_vector, int tv_vector_size)
    }
 }
 
+// ============== Parser Implementation end =======================
+
+// Test functioin helper
+int test(const char* test_name, const unsigned char* bytes, int size)
+{
+    printf("-----------------------------------------------------------\n");
+    printf("Testing: %s\n", test_name);
+    int tv_vector_size = size/2;
+    type_value_t tv_vector[tv_vector_size];
+    if(tv_parser(bytes, size, tv_vector, &tv_vector_size))
+    {
+       print_tv(tv_vector, tv_vector_size);
+    }
+    return 0;
+}
+
+
 int main()
 {
     unsigned char bytes[] = {3, 253, 0, 126, 0, 53, 3, 181, 2, 12};
-    int tv_vector_size = sizeof(bytes)/2;
-    type_value_t tv_vector[tv_vector_size];
-    tv_parser(bytes, sizeof (bytes), tv_vector, &tv_vector_size);
-    print_tv(tv_vector, tv_vector_size);
+    test("Sample data", bytes, sizeof(bytes));
+    test("Bad input data", 0, sizeof(bytes));
+    test("Bad input data size", bytes, -1);
+    test("Last value is missing", (unsigned char[]){1, 253, 0}, 3);
+    test("Insufficient input array", (unsigned char[]){1}, 1);
+    test("Bad tag", (unsigned char[]){5, 253, 0, 126}, 4);
+    printf("-----------------------------------------------------------\n");
     return 0;
 }
+
