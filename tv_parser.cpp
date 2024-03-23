@@ -48,6 +48,7 @@ class tv_parser
             type_value_t(unsigned char type, unsigned char value) :
                  _type(type),
                  _value(value) {}
+            virtual ~type_value_t(){}
             virtual void print() const=0;
 
             unsigned char _type;
@@ -78,6 +79,10 @@ class tv_parser
 };
 
 // parse binary input array
+// parser function
+// input: bytes - input bytes array
+// size - size of array
+// returns true if succeeded and decoded at least one Type-Value pair
 bool tv_parser::init(const unsigned char* bytes, int size)
 {
     // sanity check
@@ -176,11 +181,7 @@ int main()
     unsigned char bytes2[] = {1};
     test("Insufficient input array", bytes2, sizeof(bytes2));
     unsigned char bytes3[] = {5, 253, 0, 126};
-    test("Bad tag", bytes3, sizeof(bytes3));
+    test("Bad Type", bytes3, sizeof(bytes3));
     cout << "-----------------------------------------------------------" << endl;
-
-    // tv_parser parser;
-    // if (parser.init(bytes, sizeof (bytes)))
-    //     parser.print();
     return 0;
 }

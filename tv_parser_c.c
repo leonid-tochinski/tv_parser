@@ -43,7 +43,14 @@ typedef struct
 // supported types
 enum {Type_1=0, Type_2=1, Type_3=2, Type_4=3};
 
-//
+// parser function
+// input: bytes - input bytes array
+// size - size of array
+// tv_vector_size - size of output array
+// output:
+// tv_vector -  array of Type-Value pairs
+// tv_vector_size -  size of array of Type-Value pairs decoded
+// returns true if succeeded and decoded at least one Type-Value pair
 bool tv_parser(const unsigned char* bytes, int size, type_value_t* tv_vector, int* tv_vector_size)
 {
     // sanity check
@@ -92,7 +99,6 @@ bool tv_parser(const unsigned char* bytes, int size, type_value_t* tv_vector, in
     return true;
 }
 
-
 // cintext specific print functions
 void print_type_0(const type_value_t* tv)
 {
@@ -125,6 +131,14 @@ print_func_t print_func[] =
 };
 
 // print all Type-Value entries
+// parser function
+// input: bytes - input bytes array
+// size - size of array
+// tv_vector_size - size of output array
+// input:
+// tv_vector -  array of Type-Value pairs
+// tv_vector_size -  size of array of Type-Value pairs
+// returns: none
 void print_tv(const type_value_t* tv_vector, int tv_vector_size)
 {
     // sanity check
@@ -143,7 +157,6 @@ void print_tv(const type_value_t* tv_vector, int tv_vector_size)
     (*print_func[tv_vector[i].type])(&tv_vector[i]);
    }
 }
-
 // ============== Parser Implementation end =======================
 
 // Test functioin helper
@@ -160,6 +173,7 @@ int test(const char* test_name, const unsigned char* bytes, int size)
     return 0;
 }
 
+// TODO: test for print_tv
 
 int main()
 {
@@ -169,7 +183,7 @@ int main()
     test("Bad input data size", bytes, -1);
     test("Last value is missing", (unsigned char[]){1, 253, 0}, 3);
     test("Insufficient input array", (unsigned char[]){1}, 1);
-    test("Bad tag", (unsigned char[]){5, 253, 0, 126}, 4);
+    test("Bad Type", (unsigned char[]){5, 253, 0, 126}, 4);
     printf("-----------------------------------------------------------\n");
     return 0;
 }
