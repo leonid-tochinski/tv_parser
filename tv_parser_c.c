@@ -131,10 +131,6 @@ print_func_t print_func[] =
 };
 
 // print all Type-Value entries
-// parser function
-// input: bytes - input bytes array
-// size - size of array
-// tv_vector_size - size of output array
 // input:
 // tv_vector -  array of Type-Value pairs
 // tv_vector_size -  size of array of Type-Value pairs
